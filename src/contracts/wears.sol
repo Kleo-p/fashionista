@@ -36,13 +36,27 @@ contract Fashionista {
         uint256 amount;
         uint256 stock;
         uint256 discount;
+
     }
+
+   modifier onlyOwner() {
+        require(msg.sender == wear.creator , "Unauthorized access");
+        _;
+    }
+
+    Wear public wear;
+
+    event StockUpdate(uint256 indexed index, uint256 stock);
+
+
 
     mapping(uint256 => Wear) internal wears;
     address internal cUsdTokenAddress =
         0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1;
 
     uint256 wearsLength = 0;
+
+   
 
     function createWear(
         string memory _name,
@@ -51,7 +65,11 @@ contract Fashionista {
         uint256 _amount,
         uint256 _stock,
         uint256 _discount
-    ) public {
+    ) public onlyOwner {
+        require(bytes(_name).length > 0, "Name is required");
+        require(_amount > 0, "Amount must be greater than 0");
+        require(_stock >= 0, "Stock cannot be negative");
+
         wears[wearsLength] = Wear(
             payable(msg.sender),
             _name,
@@ -63,6 +81,8 @@ contract Fashionista {
         );
         wearsLength++;
     }
+
+   
 
     function buy(uint256 _index) public payable {
         require(
@@ -96,11 +116,21 @@ contract Fashionista {
             "Only creator can use this function"
         );
         wears[_index].stock = _stock;
+    
+     emit StockUpdate(_index, _stock);
+
     }
 
     function getWearsLength() public view returns (uint256) {
         return (wearsLength);
     }
+
+    function withdrawFunds() public onlyOwner {
+        uint256 balance = IERC20Token(cUsdTokenAddress).balanceOf(address(this));
+        require(balance > 0, "No funds to withdraw");
+        require(IERC20Token(cUsdTokenAddress).transfer(msg.sender, balance), "Transfer failed");
+    }
+
 
     function getWear(uint256 _index)
         public
