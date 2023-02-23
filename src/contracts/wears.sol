@@ -46,6 +46,9 @@ contract Fashionista {
 
     Wear public wear;
 
+    event StockUpdate(uint256 indexed index, uint256 stock);
+
+
 
     mapping(uint256 => Wear) internal wears;
     address internal cUsdTokenAddress =
@@ -63,6 +66,10 @@ contract Fashionista {
         uint256 _stock,
         uint256 _discount
     ) public onlyOwner {
+        require(bytes(_name).length > 0, "Name is required");
+        require(_amount > 0, "Amount must be greater than 0");
+        require(_stock >= 0, "Stock cannot be negative");
+
         wears[wearsLength] = Wear(
             payable(msg.sender),
             _name,
@@ -109,11 +116,21 @@ contract Fashionista {
             "Only creator can use this function"
         );
         wears[_index].stock = _stock;
+    
+     emit StockUpdate(_index, _stock);
+
     }
 
     function getWearsLength() public view returns (uint256) {
         return (wearsLength);
     }
+
+    function withdrawFunds() public onlyOwner {
+        uint256 balance = IERC20Token(cUsdTokenAddress).balanceOf(address(this));
+        require(balance > 0, "No funds to withdraw");
+        require(IERC20Token(cUsdTokenAddress).transfer(msg.sender, balance), "Transfer failed");
+    }
+
 
     function getWear(uint256 _index)
         public
