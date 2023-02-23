@@ -27,7 +27,10 @@ interface IERC20Token {
     );
 }
 
+
 contract Fashionista {
+
+    //sruct for the fashion wear
     struct Wear {
         address payable creator;
         string name;
@@ -38,20 +41,43 @@ contract Fashionista {
         uint256 discount;
     }
 
-    mapping(uint256 => Wear) internal wears;
+    //address of the token contract
     address internal cUsdTokenAddress =
         0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1;
 
+    //track total number of fashion wear stored
     uint256 wearsLength = 0;
 
+    //mapping for the Wear
+    mapping(uint256 => Wear) internal wears;
+
+    //modifier for fashion creator
+
+    modifier onlyOwner(uint _index){
+       require(
+            msg.sender == wears[_index].creator,
+            "Only creator can use this function"
+        );
+        _;
+    }
+
+    //creator stores fashion wear in the smart contract.
     function createWear(
-        string memory _name,
-        string memory _description,
-        string memory _image,
+        string calldata _name,
+        string calldata _description,
+        string calldata _image,
         uint256 _amount,
         uint256 _stock,
         uint256 _discount
     ) public {
+
+        require(bytes(_name).length > 0,"input is invalid");
+        require(bytes(_description).length > 0,"input is invalid");
+        require(bytes(_image).length > 0,"input is invalid");
+        require(_amount > 0,"input is invalid");
+        require(_stock > 0,"input is invalid");
+        require(_amount > _discount,"input is invalid");
+
         wears[wearsLength] = Wear(
             payable(msg.sender),
             _name,
@@ -64,65 +90,49 @@ contract Fashionista {
         wearsLength++;
     }
 
+    //buy fashion wear from the creator
     function buy(uint256 _index) public payable {
-        require(
-            wears[_index].amount > wears[_index].discount,
-            "Amount must be greater than discount"
-        );
+        Wear memory _wear = wears[_index];
+        
         require(
             IERC20Token(cUsdTokenAddress).transferFrom(
                 msg.sender,
-                wears[_index].creator,
-                wears[_index].amount - wears[_index].discount
+                _wear.creator,
+                 _wear.amount - _wear.discount
             ),
             "This transaction could not be performed"
         );
-
         // update stock
-        wears[_index].stock -= 1;
+        _wear.stock -= 1;
     }
 
-    function change_discount(uint256 _index, uint256 _discount) public {
-        require(
-            msg.sender == wears[_index].creator,
-            "Only creator can use this function"
-        );
+
+    //change discount for the fashion wear
+    function change_discount(uint256 _index, uint256 _discount) public onlyOwner(_index) {
         wears[_index].discount = _discount;
     }
 
-    function update_stock(uint256 _index, uint256 _stock) public {
-        require(
-            msg.sender == wears[_index].creator,
-            "Only creator can use this function"
-        );
+    //update stock number for a specific fashion wear.
+    function update_stock(uint256 _index, uint256 _stock) public onlyOwner(_index){
         wears[_index].stock = _stock;
     }
 
+
+    //track number of fashion wear.
     function getWearsLength() public view returns (uint256) {
-        return (wearsLength);
+        return wearsLength;
     }
 
-    function getWear(uint256 _index)
-        public
-        view
-        returns (
-            address payable,
-            string memory,
-            string memory,
-            string memory,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return (
-            wears[_index].creator,
-            wears[_index].name,
-            wears[_index].description,
-            wears[_index].image,
-            wears[_index].amount,
-            wears[_index].stock,
-            wears[_index].discount
-        );
+    //retrieve specific fashion wear 
+    function getWear(uint256 _index) public view returns (Wear memory){
+        return wears[_index];
     }
+
+    // delete the wear from the contract
+    function deleteWear(uint _index) public onlyOwner(_index){
+        delete wears[_index];
+    }
+
+
+
 }
