@@ -36,13 +36,24 @@ contract Fashionista {
         uint256 amount;
         uint256 stock;
         uint256 discount;
+
     }
+
+   modifier onlyOwner() {
+        require(msg.sender == wear.creator , "Unauthorized access");
+        _;
+    }
+
+    Wear public wear;
+
 
     mapping(uint256 => Wear) internal wears;
     address internal cUsdTokenAddress =
         0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1;
 
     uint256 wearsLength = 0;
+
+   
 
     function createWear(
         string memory _name,
@@ -51,7 +62,7 @@ contract Fashionista {
         uint256 _amount,
         uint256 _stock,
         uint256 _discount
-    ) public {
+    ) public onlyOwner {
         wears[wearsLength] = Wear(
             payable(msg.sender),
             _name,
@@ -63,6 +74,8 @@ contract Fashionista {
         );
         wearsLength++;
     }
+
+   
 
     function buy(uint256 _index) public payable {
         require(
